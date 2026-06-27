@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2f7d65">
+  <meta name="description" content="PWA hỗ trợ giảng viên quản lý công việc, deadline và gợi ý ưu tiên.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Trợ lý GV">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Trợ lý công việc giảng viên</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Thực trạng -> AI hỗ trợ -> Hiệu quả</p>
+      <h1>Trợ lý quản lý công việc giảng viên</h1>
+      <p class="header-copy">Theo dõi giảng dạy, nghiên cứu, hành chính và hồ sơ chuyên môn trong một bảng làm việc rõ ràng.</p>
+    </div>
+    <button class="icon-button primary" id="quickAddBtn" type="button" title="Thêm công việc">
+      <span aria-hidden="true">+</span>
+      <span>Thêm việc</span>
+    </button>
+  </header>
+
+  <main class="app-shell">
+    <section class="dashboard-section" aria-labelledby="dashboardTitle">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Dashboard</p>
+          <h2 id="dashboardTitle">Tổng quan tiến độ</h2>
+        </div>
+        <div class="completion-ring" aria-label="Tỷ lệ hoàn thành">
+          <span id="completionPercent">0%</span>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <article class="metric-card">
+          <span class="metric-label">Tổng công việc</span>
+          <strong id="totalTasks">0</strong>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Hoàn thành</span>
+          <strong id="doneTasks">0</strong>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Đang làm</span>
+          <strong id="doingTasks">0</strong>
+        </article>
+        <article class="metric-card danger">
+          <span class="metric-label">Quá hạn</span>
+          <strong id="overdueTasks">0</strong>
+        </article>
+      </div>
+
+      <div class="workflow-strip" aria-label="Mô hình vận hành">
+        <div>
+          <strong>Thực trạng</strong>
+          <span>Nhiều đầu việc, deadline phân tán</span>
+        </div>
+        <div>
+          <strong>AI hỗ trợ</strong>
+          <span>Ưu tiên, chia bước, cảnh báo hạn</span>
+        </div>
+        <div>
+          <strong>Hiệu quả</strong>
+          <span>Làm việc có kế hoạch và đo được tiến độ</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="toolbar-section" aria-label="Bộ lọc công việc">
+      <label class="search-box">
+        <span>Tìm kiếm</span>
+        <input id="searchInput" type="search" placeholder="Nhập tên công việc...">
+      </label>
+
+      <label>
+        <span>Loại</span>
+        <select id="typeFilter">
+          <option value="all">Tất cả</option>
+          <option value="giảng dạy">Giảng dạy</option>
+          <option value="nghiên cứu">Nghiên cứu</option>
+          <option value="hành chính">Hành chính</option>
+          <option value="cá nhân">Cá nhân</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Trạng thái</span>
+        <select id="statusFilter">
+          <option value="all">Tất cả</option>
+          <option value="chưa làm">Chưa làm</option>
+          <option value="đang làm">Đang làm</option>
+          <option value="hoàn thành">Hoàn thành</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Ưu tiên</span>
+        <select id="priorityFilter">
+          <option value="all">Tất cả</option>
+          <option value="cao">Cao</option>
+          <option value="trung bình">Trung bình</option>
+          <option value="thấp">Thấp</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="content-grid">
+      <div class="task-panel">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">Danh sách</p>
+            <h2>Công việc cần xử lý</h2>
+          </div>
+          <button class="icon-button secondary" id="resetSampleBtn" type="button" title="Khôi phục dữ liệu mẫu">
+            <span aria-hidden="true">↻</span>
+            <span>Dữ liệu mẫu</span>
+          </button>
+        </div>
+        <div class="task-list" id="taskList" aria-live="polite"></div>
+      </div>
+
+      <aside class="side-column">
+        <section class="form-panel" aria-labelledby="formTitle">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Thêm / sửa</p>
+              <h2 id="formTitle">Thông tin công việc</h2>
+            </div>
+          </div>
+
+          <form id="taskForm">
+            <input id="taskId" type="hidden">
+
+            <label>
+              <span>Tiêu đề</span>
+              <input id="titleInput" type="text" placeholder="Ví dụ: Chấm bài kiểm tra chương 2" required>
+            </label>
+
+            <label>
+              <span>Mô tả</span>
+              <textarea id="descriptionInput" rows="4" placeholder="Nội dung cần thực hiện, tài liệu liên quan..."></textarea>
+            </label>
+
+            <div class="form-row">
+              <label>
+                <span>Loại công việc</span>
+                <select id="typeInput" required>
+                  <option value="giảng dạy">Giảng dạy</option>
+                  <option value="nghiên cứu">Nghiên cứu</option>
+                  <option value="hành chính">Hành chính</option>
+                  <option value="cá nhân">Cá nhân</option>
+                </select>
+              </label>
+              <label>
+                <span>Ưu tiên</span>
+                <select id="priorityInput" required>
+                  <option value="cao">Cao</option>
+                  <option value="trung bình" selected>Trung bình</option>
+                  <option value="thấp">Thấp</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                <span>Hạn chót</span>
+                <input id="deadlineInput" type="date" required>
+              </label>
+              <label>
+                <span>Trạng thái</span>
+                <select id="statusInput" required>
+                  <option value="chưa làm">Chưa làm</option>
+                  <option value="đang làm">Đang làm</option>
+                  <option value="hoàn thành">Hoàn thành</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button class="icon-button primary" type="submit" title="Lưu công việc">
+                <span aria-hidden="true">✓</span>
+                <span id="submitLabel">Lưu công việc</span>
+              </button>
+              <button class="icon-button ghost" id="cancelEditBtn" type="button" title="Hủy sửa">
+                <span aria-hidden="true">×</span>
+                <span>Hủy</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="ai-panel" aria-labelledby="aiTitle">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">AI hỗ trợ</p>
+              <h2 id="aiTitle">Gợi ý thông minh</h2>
+            </div>
+            <button class="icon-only" id="refreshAiBtn" type="button" title="Làm mới gợi ý" aria-label="Làm mới gợi ý">↻</button>
+          </div>
+          <div id="aiSuggestions" class="suggestion-list"></div>
+        </section>
+      </aside>
+    </section>
+
+    <section class="insight-grid">
+      <article class="reminder-panel">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">Nhắc việc</p>
+            <h2>Sắp đến hạn</h2>
+          </div>
+        </div>
+        <div id="deadlineList" class="deadline-list"></div>
+      </article>
+
+      <article class="stats-panel">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">Thống kê</p>
+            <h2>Phân bổ công việc</h2>
+          </div>
+        </div>
+        <div id="statusChart" class="bar-chart" aria-label="Biểu đồ theo trạng thái"></div>
+        <div id="typeChart" class="bar-chart" aria-label="Biểu đồ theo loại công việc"></div>
+      </article>
+    </section>
+  </main>
+
+  <template id="taskTemplate">
+    <article class="task-card">
+      <div class="task-card-header">
+        <div>
+          <h3></h3>
+          <p class="task-description"></p>
+        </div>
+        <span class="priority-badge"></span>
+      </div>
+      <div class="task-meta"></div>
+      <div class="task-actions">
+        <button class="icon-button small edit-task" type="button" title="Sửa công việc">
+          <span aria-hidden="true">✎</span>
+          <span>Sửa</span>
+        </button>
+        <button class="icon-button small complete-task" type="button" title="Đánh dấu hoàn thành">
+          <span aria-hidden="true">✓</span>
+          <span>Hoàn thành</span>
+        </button>
+        <button class="icon-button small danger delete-task" type="button" title="Xóa công việc">
+          <span aria-hidden="true">×</span>
+          <span>Xóa</span>
+        </button>
+      </div>
+    </article>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
